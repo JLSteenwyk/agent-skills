@@ -1,0 +1,3 @@
+display_name: "Parallel Audit"
+short_description: "Run many Codex audits and compare results democratically."
+default_prompt: "Audit this codebase with parallel independent runs and produce a ranked action plan."
