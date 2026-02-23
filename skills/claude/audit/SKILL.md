@@ -24,7 +24,7 @@ The user wants to run a parallel audit of this codebase. Your job is to:
 
 4. **Generate and run the audit shell script** — Create a bash script called `audit.sh` in the project root that:
    - Stores the prompt in a heredoc variable
-   - Runs `claude -p "${PROMPT}" --output-format text` N times with controlled parallelism
+   - Runs `claude -p "${PROMPT}" --output-format text --max-turns 1` N times with controlled parallelism
    - Saves each result to `audit_results/<timestamp>/audit_XX.md`
    - Prints a summary when done (completed/failed counts, helper grep commands)
    - Uses these defaults (ask the user if they want to change them):
@@ -86,7 +86,7 @@ The user wants to run a parallel audit of this codebase. Your job is to:
    for i in $(seq -w 1 "${ITERATIONS}"); do
        outfile="${RUN_DIR}/audit_${i}.md"
        echo "[$(date +%H:%M:%S)] Launching audit ${i}/${ITERATIONS}"
-       claude -p "${PROMPT}" --output-format text > "${outfile}" 2>&1 &
+       claude -p "${PROMPT}" --output-format text --max-turns 1 > "${outfile}" 2>&1 &
        running=$((running + 1))
        if [ "${running}" -ge "${PARALLELISM}" ]; then
            wait -n 2>/dev/null || true
@@ -150,3 +150,4 @@ The user wants to run a parallel audit of this codebase. Your job is to:
 - The prompt should be **self-contained** — each `claude -p` invocation starts fresh with no conversation history, so the prompt must provide enough context for Claude to understand what to audit.
 - Tailor the prompt to the **actual codebase** — don't use a generic template. Reference real files, directories, and patterns you discovered during exploration.
 - The prompt should ask for **concrete, actionable recommendations** with file paths and line numbers, not vague suggestions.
+- **CRITICAL: Single-turn output** — The prompt MUST include an explicit instruction telling Claude to write the COMPLETE report in a SINGLE response without using tools, spawning subagents, or referencing "the report above". Use `--max-turns 1` to enforce this. Without this, Claude will use tool calls to explore the codebase and then output a short summary like "the report above covers all sections" — but with `--output-format text`, only the final text is captured, so the actual audit is lost.
